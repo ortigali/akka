@@ -140,7 +140,10 @@ abstract class GroupBase extends Group {
  */
 trait Group extends RouterConfig {
 
-  def paths: immutable.Iterable[String]
+  @deprecated("Implement paths with ActorSystem parameter instead", "2.4")
+  def paths: immutable.Iterable[String] = null
+
+  def paths(system: ActorSystem): immutable.Iterable[String]
 
   /**
    * [[akka.actor.Props]] for a group router based on the settings defined by
