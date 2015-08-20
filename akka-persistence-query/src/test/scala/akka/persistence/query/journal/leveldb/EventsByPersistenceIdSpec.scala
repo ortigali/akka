@@ -67,6 +67,24 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
         .expectNext("b-1", "b-2")
         .expectComplete()
     }
+
+    "not see new events after demand request" in {
+      val ref = setup("f")
+      val src = queries.query(EventsByPersistenceId("f", 0L, Long.MaxValue), NoRefresh)
+      val probe = src.map(_.event).runWith(TestSink.probe[Any])
+        .request(2)
+        .expectNext("f-1", "f-2")
+        .expectNoMsg(100.millis)
+
+      ref ! "f-4"
+      expectMsg("f-4-done")
+
+      probe
+        .expectNoMsg(100.millis)
+        .request(5)
+        .expectNext("f-3")
+        .expectComplete() // f-4 not seen
+    }
   }
 
   "Leveldb live query EventsByPersistenceId" must {
@@ -94,6 +112,24 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       expectMsg("d-4-done")
 
       probe.expectNext("d-4").expectComplete()
+    }
+
+    "find new events after demand request" in {
+      val ref = setup("e")
+      val src = queries.query(EventsByPersistenceId("e", 0L, Long.MaxValue), refreshInterval)
+      val probe = src.map(_.event).runWith(TestSink.probe[Any])
+        .request(2)
+        .expectNext("e-1", "e-2")
+        .expectNoMsg(100.millis)
+
+      ref ! "e-4"
+      expectMsg("e-4-done")
+
+      probe
+        .expectNoMsg(100.millis)
+        .request(5)
+        .expectNext("e-3")
+        .expectNext("e-4")
     }
   }
 
