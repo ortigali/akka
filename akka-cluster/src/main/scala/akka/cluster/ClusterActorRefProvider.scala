@@ -67,10 +67,11 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
     // amend it to use max-total-nr-of-instances as nr-of-instances if cluster.enabled and
     // user has not specified nr-of-instances
     val config2 =
-      if (config.hasPath("cluster.enabled") && config.getBoolean("cluster.enabled") && !config.hasPath("nr-of-instances"))
-        ConfigFactory.parseString("nr-of-instances=" + config.getInt("cluster.max-total-nr-of-instances"))
+      if (config.hasPath("cluster.enabled") && config.getBoolean("cluster.enabled") && !config.hasPath("nr-of-instances")) {
+        val maxTotalNrOfInstances = config.withFallback(default).getInt("cluster.max-total-nr-of-instances")
+        ConfigFactory.parseString("nr-of-instances=" + maxTotalNrOfInstances)
           .withFallback(config)
-      else config
+      } else config
 
     super.parseConfig(path, config2) match {
       case d @ Some(deploy) ⇒
